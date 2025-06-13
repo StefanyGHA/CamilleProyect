@@ -370,6 +370,213 @@ app.delete('/carrito/:productoId', autenticar, async (req, res) => {
   }
 })
 
+// Obtener datos del pago
+app.get('/api/pago/datos', autenticar, async (req, res) => {
+  try {
+    const carrito = await db.collection('carritos').findOne({
+      usuarioId: new ObjectId(req.usuario.id)
+    });
+
+    if (!carrito || carrito.items.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Carrito vacío o no encontrado' 
+      });
+    }
+
+    const usuario = await db.collection('usuarios').findOne({
+      _id: new ObjectId(req.usuario.id)
+    }, { projection: { direccion: 1, nombre: 1, email: 1 } });
+
+    const total = carrito.items.reduce((sum, item) => 
+      sum + (item.producto.precio * item.cantidad), 0
+    );
+
+    res.json({
+      success: true,
+      carritoId: carrito._id.toString(),
+      items: carrito.items,
+      total: total,
+      usuario: {
+        nombre: usuario.nombre,
+        email: usuario.email,
+        direccion: usuario.direccion || 'No especificada'
+      }
+    });
+  } catch (error) {
+    console.error('Error al obtener datos de pago:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Procesar pago
+app.post('/api/pago/procesar', autenticar, async (req, res) => {
+  try {
+    const { carritoId, datosTarjeta, direccionEnvio } = req.body;
+
+    // Validaciones básicas
+    if (!carritoId || !datosTarjeta) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Datos de pago incompletos' 
+      });
+    }
+
+    if (!datosTarjeta.numero || !datosTarjeta.nombre || !datosTarjeta.expiracion || !datosTarjeta.cvv) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Datos de tarjeta incompletos' 
+      });
+    }
+
+    // Verificar que el carrito existe y pertenece al usuario
+    const carrito = await db.collection('carritos').findOne({
+      _id: new ObjectId(carritoId),
+      usuarioId: new ObjectId(req.usuario.id)
+    });
+
+    if (!carrito || carrito.items.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Carrito no encontrado o vacío' 
+      });
+    }
+
+    // Calcular total
+    const total = carrito.items.reduce((sum, item) => 
+      sum + (item.producto.precio * item.cantidad), 0
+    );
+
+    // Procesar pago (simulado)
+    const resultadoPago = await procesarPagoTarjeta(datosTarjeta, total);
+
+    if (!resultadoPago.exito) {
+      return res.status(400).json({ 
+        success: false, 
+        error: resultadoPago.mensaje || 'Pago rechazado',
+        codigo: resultadoPago.codigo
+      });
+    }
+
+    // Crear orden exitosa
+    const orden = {
+      usuarioId: new ObjectId(req.usuario.id),
+      items: carrito.items,
+      total: total,
+      estado: 'pagado',
+      metodoPago: 'tarjeta',
+      referenciaPago: resultadoPago.referencia,
+      direccionEnvio: direccionEnvio || 'Dirección no especificada',
+      fechaCreacion: new Date(),
+      fechaPago: new Date()
+    };
+
+    const resultadoOrden = await db.collection('ordenes').insertOne(orden);
+
+    // Limpiar carrito después del pago exitoso
+    await db.collection('carritos').deleteOne({ 
+      _id: new ObjectId(carritoId) 
+    });
+
+    res.json({ 
+      success: true,
+      ordenId: resultadoOrden.insertedId.toString(),
+      referencia: resultadoPago.referencia,
+      total: total,
+      mensaje: 'Pago procesado exitosamente'
+    });
+
+  } catch (error) {
+    console.error('Error al procesar pago:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor al procesar el pago' 
+    });
+  }
+});
+
+// Función mejorada de procesamiento de pago simulado
+async function procesarPagoTarjeta(datosTarjeta, monto) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      // Simulación más realista
+      const numeroTarjeta = datosTarjeta.numero.replace(/\s/g, '');
+      
+      // Validaciones básicas de tarjeta
+      if (numeroTarjeta.length < 13 || numeroTarjeta.length > 19) {
+        resolve({
+          exito: false,
+          mensaje: 'Número de tarjeta inválido',
+          codigo: 'INVALID_CARD'
+        });
+        return;
+      }
+
+      if (!datosTarjeta.cvv || datosTarjeta.cvv.length < 3) {
+        resolve({
+          exito: false,
+          mensaje: 'CVV inválido',
+          codigo: 'INVALID_CVV'
+        });
+        return;
+      }
+
+      // Simular diferentes tipos de respuesta
+      const random = Math.random();
+      
+      if (random > 0.85) { // 15% falla
+        const errores = [
+          { mensaje: 'Fondos insuficientes', codigo: 'INSUFFICIENT_FUNDS' },
+          { mensaje: 'Tarjeta expirada', codigo: 'EXPIRED_CARD' },
+          { mensaje: 'Tarjeta cancelada', codigo: 'CANCELLED_CARD' }
+        ];
+        const error = errores[Math.floor(Math.random() * errores.length)];
+        
+        resolve({
+          exito: false,
+          mensaje: error.mensaje,
+          codigo: error.codigo
+        });
+      } else { // 85% éxito
+        resolve({
+          exito: true,
+          monto: monto,
+          referencia: `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          mensaje: 'Pago aprobado exitosamente'
+        });
+      }
+    }, 2000); // Simular tiempo de procesamiento
+  });
+}
+
+// Ruta para obtener detalles de una orden
+app.get('/api/orden/:ordenId', autenticar, async (req, res) => {
+  try {
+    const orden = await db.collection('ordenes').findOne({
+      _id: new ObjectId(req.params.ordenId),
+      usuarioId: new ObjectId(req.usuario.id)
+    });
+
+    if (!orden) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Orden no encontrada' 
+      });
+    }
+
+    res.json({ success: true, orden });
+  } catch (error) {
+    console.error('Error al obtener orden:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error al obtener detalles de la orden' 
+    });
+  }
+});
+
 // Manejo de errores
 app.use((req, res) => {
     res.status(404).json({ mensaje: "Ruta no encontrada" })

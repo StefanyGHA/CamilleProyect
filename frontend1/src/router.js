@@ -34,6 +34,12 @@ const routes = [
         meta: { requiresAuth: true }
     },
     {
+        path: '/pago/tarejta',
+        name: 'pago',
+        component: () => import('@/components/CardPayment.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
         path: '/dashboard',
         name: 'dashboard',
         component: () => import('@/components/navbar.vue'),
