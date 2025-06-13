@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
+
 import { useCartStore } from '@/stores/cart';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
@@ -9,6 +10,18 @@ const imageError = ref({});
 const cartStore = useCartStore();
 const authStore = useAuthStore();
 const router = useRouter();
+
+
+import { useRouter } from 'vue-router';
+
+const productos = ref([]);
+const carrito = ref([]);
+const router = useRouter();
+
+// Simulación: cambia esto por tu lógica real de autenticación
+const isLoggedIn = ref(true);
+
+// Cargar productos desde backend
 
 onMounted(async () => {
   try {
@@ -20,6 +33,7 @@ onMounted(async () => {
   }
 });
 
+
 const handleImageError = (productoId) => {
   imageError.value[productoId] = true;
 };
@@ -29,6 +43,45 @@ const addToCart = async (productoId) => {
     router.push('/login');
     return;
   }
+
+  // Cargar carrito desde localStorage
+  const carritoGuardado = localStorage.getItem('carrito');
+  if (carritoGuardado) {
+    carrito.value = JSON.parse(carritoGuardado);
+  }
+});
+
+// Función: Agregar al carrito
+function agregarAlCarrito(producto) {
+  if (!isLoggedIn.value) {
+    router.push("/login");
+    return;
+  }
+
+  const existente = carrito.value.find(p => p._id === producto._id);
+  if (existente) {
+    existente.cantidad += 1;
+  } else {
+    carrito.value.push({ ...producto, cantidad: 1 });
+  }
+
+  localStorage.setItem('carrito', JSON.stringify(carrito.value));
+  console.log("Agregado al carrito:", producto.nombre);
+}
+
+// Función: Comprar ahora
+function comprarAhora(producto) {
+  if (!isLoggedIn.value) {
+    router.push("/login");
+    return;
+  }
+
+  // Guardar solo este producto en carrito temporal
+  localStorage.setItem('carrito', JSON.stringify([{ ...producto, cantidad: 1 }]));
+  router.push("/checkout");
+}
+</script>
+
 
   try {
     await cartStore.addToCart(productoId);
@@ -47,6 +100,7 @@ const addToCart = async (productoId) => {
   }
 };
 </script>
+
 
 <template>
   <header class="bg-white sticky top-0 z-50 shadow-sm">
@@ -125,6 +179,7 @@ const addToCart = async (productoId) => {
           Comprar ahora
         </router-link>
       </div>
+
     </div>
     
     <div class="container mx-auto px-4 -mt-8">
@@ -375,3 +430,53 @@ const addToCart = async (productoId) => {
   opacity: 1;
 }
 </style>
+
+    </section>
+  
+
+<!-- Productos-->
+  <div class="p-2">
+  <h2 class="text-2xl text-center font-bold mb-4 text-purple-800">Nuestros productos</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    <div
+      v-for="producto in productos"
+      :key="producto._id"
+      class="bg-white rounded-2xl shadow-lg p-2 hover:scale-105 transition-transform"
+    >
+      <img
+        :src="`http://localhost:3000/uploads/${producto.imagen2}`"
+        alt=""
+        class="w-full h-64 object-cover rounded-2xl"
+      />
+      <h3 class="text-lg font-semibold text-gray-800 mt-2">
+        {{ producto.nombre }}
+      </h3>
+      <p class="text-gray-600 text-sm">{{ producto.descripcion }}</p>
+      <p class="text-gray-800 font-semibold mt-1"> {{ producto.precio }}</p>
+      <p class="text-sm text-gray-500">Stock {{ producto.stock }}</p>
+
+      <div class="mt-3 flex justify-between gap-2">
+        <button @click="agregarAlCarrito(producto)"
+          class="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition w-1/2">
+          Agregar
+        </button>
+        <button @click="comprarAhora(producto)"
+          class="bg-pink-500 text-white px-3 py-2 rounded-lg hover:bg-pink-600 transition w-1/2">
+          Comprar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+
+
+
+
+  <footer class="bg-purple-800 text-white py-6">
+    <div class="container mx-auto text-center">
+      <p>&copy; 2023 Camille. Todos los derechos reservados.</p>
+    </div>  
+ </footer>
+</template>
+
