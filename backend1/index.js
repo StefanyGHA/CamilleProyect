@@ -37,7 +37,7 @@ try {
 const usuarios = db.collection("usuarios")
 
 // Registro de usuario
-app.post("/registrar", async (req, res) => {
+app.post("/register", async (req, res) => {
     try {
         const { nombre, email, password } = req.body
         

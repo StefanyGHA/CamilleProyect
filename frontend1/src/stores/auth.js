@@ -10,12 +10,10 @@ export const useAuthStore = defineStore('auth', () => {
     const isLoading = ref(false)
     const error = ref(null)
 
-    // Función para verificar si el token está expirado
     const isTokenExpired = () => {
         if (!token.value) return true
         
         try {
-            // Decodificar el token JWT sin verificar (solo para obtener la fecha de expiración)
             const payload = JSON.parse(atob(token.value.split('.')[1]))
             const currentTime = Date.now() / 1000
             
@@ -26,7 +24,6 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    // Función para limpiar datos de autenticación
     const clearAuth = () => {
         isAuthenticated.value = false
         user.value = null
@@ -34,7 +31,6 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.removeItem('token')
     }
 
-    // Verificar token al inicializar
     if(token.value) {
         if (!isTokenExpired()) {
             isAuthenticated.value = true
@@ -84,8 +80,6 @@ export const useAuthStore = defineStore('auth', () => {
         try {
             isLoading.value = true
             error.value = null
-
-            // Verificar token antes de hacer la petición
             if (!token.value || isTokenExpired()) {
                 throw new Error('Token expirado')
             }
@@ -122,10 +116,7 @@ export const useAuthStore = defineStore('auth', () => {
             isLoading.value = false
         }
     }
-
-    // Función para hacer peticiones autenticadas con manejo automático de errores
     const authenticatedFetch = async (url, options = {}) => {
-        // Verificar token antes de hacer la petición
         if (!token.value || isTokenExpired()) {
             console.log('Token expirado o ausente, haciendo logout...')
             logout()
@@ -143,8 +134,6 @@ export const useAuthStore = defineStore('auth', () => {
                 ...options,
                 headers
             })
-
-            // Si recibimos un 401, el token es inválido
             if (response.status === 401) {
                 console.log('Respuesta 401, token inválido, haciendo logout...')
                 logout()
@@ -163,8 +152,6 @@ export const useAuthStore = defineStore('auth', () => {
         clearAuth()
         router.push('/login')
     }
-
-    // Función para verificar y restaurar autenticación
     const checkAuth = () => {
         const storedToken = localStorage.getItem('token')
         
@@ -181,6 +168,47 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    // Método de registro (nuevo)
+    const register = async (userData) => {
+        try {
+            isLoading.value = true
+            error.value = null
+            
+            const response = await fetch('http://localhost:3000/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nombre: userData.name,
+                    email: userData.email,
+                    password: userData.password
+                })
+            })
+
+            const data = await response.json()
+
+            if(response.ok) {
+                isAuthenticated.value = true
+                user.value = { 
+                    nombre: data.nombre,
+                    email: data.email,
+                    id: data.id
+                }
+                token.value = data.token
+                localStorage.setItem('token', data.token)
+                console.log('Registro exitoso, token guardado')
+                router.push('/') // Redirigir a página principal
+            } else {
+                throw new Error(data.mensaje || 'Error en el registro')
+            }
+        } catch (error) {
+            error.value = error.message
+            console.error('Error en registro:', error)
+            throw error
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     return { 
         isAuthenticated, 
         user, 
@@ -193,6 +221,7 @@ export const useAuthStore = defineStore('auth', () => {
         authenticatedFetch,
         isTokenExpired,
         checkAuth,
-        clearAuth
+        clearAuth,
+        register
     }
 })

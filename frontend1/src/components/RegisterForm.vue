@@ -19,17 +19,31 @@ const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
 const handleSubmit = async () => {
-  loading.value = true
   errors.value = {}
+  loading.value = true
   
   try {
-    await authStore.register(form.value)
+    // Validación básica
+    if (form.value.password !== form.value.passwordConfirmation) {
+      throw new Error('Las contraseñas no coinciden')
+    }
+
+    await authStore.register({
+      name: form.value.name,
+      email: form.value.email,
+      password: form.value.password
+    })
+
+    // Redirigir después de registro exitoso
     router.push('/')
-  } catch (error) {
-    if (error.response?.data?.errors) {
-      errors.value = error.response.data.errors
+    
+  } catch (err) {
+    if (err.message.includes('400')) {
+      errors.value.general = 'Datos inválidos. Por favor verifica la información.'
+    } else if (err.message.includes('409')) {
+      errors.value.email = ['Este correo ya está registrado']
     } else {
-      errors.value.general = error.message || 'Error al registrar. Por favor intenta nuevamente.'
+      errors.value.general = err.message || 'Error al registrar. Por favor intenta nuevamente.'
     }
   } finally {
     loading.value = false
