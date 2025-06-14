@@ -59,7 +59,7 @@ const selectedTotal = computed(() => {
 
 const proceedToCheckout = () => {
   if (selectedItems.value.length === 0) return
-  router.push('/checkout')
+  router.push({ name: 'pago' })
 }
 </script>
 
@@ -73,6 +73,17 @@ const proceedToCheckout = () => {
             <router-link to="/" class="text-2xl font-bold text-pink-600">CAMILLE</router-link>
           </div>
           <nav class="flex items-center space-x-6">
+            <router-link 
+              to="/dashboard" 
+              class="hidden md:flex items-center text-gray-700 hover:text-pink-500 text-sm font-medium transition-colors"
+              active-class="text-pink-500"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l9-9m0 0l9 9m-9-9v18" />
+              </svg>
+              INICIO
+            </router-link>
+
             <router-link 
               to="/perfil" 
               class="hidden md:flex items-center text-gray-700 hover:text-pink-500 text-sm font-medium transition-colors"
@@ -99,7 +110,7 @@ const proceedToCheckout = () => {
     <main class="max-w-7xl mx-auto px-4 py-6">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-900">MI CARRITO ({{ cartStore.itemCount }})</h1>
-        <router-link to="/productos" class="text-sm text-pink-500 hover:text-pink-600 flex items-center">
+        <router-link to="/dashboard" class="text-sm text-pink-500 hover:text-pink-600 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>

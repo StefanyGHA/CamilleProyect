@@ -168,7 +168,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    // Método de registro (nuevo)
+    // Método de registro
     const register = async (userData) => {
         try {
             isLoading.value = true

@@ -2,26 +2,17 @@ import './assets/main.css'
 import './assets/styles.css'
 
 import { createApp } from 'vue'
-import { createPinia } from 'pinia' // Importa Pinia
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
-
+// Inicialización de la app
 const app = createApp(App)
-const pinia = createPinia() // Crea instancia de Pinia
+const pinia = createPinia()
 
-app.use(pinia) // Usa Pinia antes del router
-app.use(router)
+// Orden recomendado para plugins
+app.use(pinia) // 1. Pinia (gestión de estado)
+app.use(router) // 2. Router
 
+// Montaje final
 app.mount('#app')
-
-
-
-const app = createApp(App)
-
-app.mount('#app')
-
-
-
-
-
