@@ -35,8 +35,6 @@ try {
 
 
 const usuarios = db.collection("usuarios")
-
-// Registro de usuario
 app.post("/register", async (req, res) => {
     try {
         const { nombre, email, password } = req.body
@@ -67,6 +65,15 @@ app.post("/register", async (req, res) => {
         res.status(500).json({ mensaje: "Error interno del servidor" })
     }
 })
+
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'OK',
+        db: db ? 'Connected' : 'Disconnected',
+        time: new Date()
+    })
+})
+
 
 // Login
 app.post("/login", async (req, res) => {

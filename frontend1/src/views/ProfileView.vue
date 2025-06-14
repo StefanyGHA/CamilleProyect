@@ -38,7 +38,6 @@ const handleLogout = () => {
 
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Header estilo SHEIN -->
     <header class="bg-white sticky top-0 z-50 shadow-sm">
       <div class="max-w-7xl mx-auto px-4">
         <div class="flex justify-between items-center h-14">
@@ -47,8 +46,17 @@ const handleLogout = () => {
             <router-link to="/" class="text-2xl font-bold text-pink-600">CAMILLE</router-link>
           </div>
           
-          <!-- Menú de navegación -->
           <nav class="flex items-center space-x-6">
+            <router-link 
+              to="/dashboard" 
+              class="hidden md:flex items-center text-gray-700 hover:text-pink-500 text-sm font-medium transition-colors"
+              active-class="text-pink-500"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l9-9m0 0l9 9m-9-9v18" />
+              </svg>
+              INICIO
+            </router-link>
             <router-link 
               to="/perfil" 
               class="hidden md:flex items-center text-gray-700 hover:text-pink-500 text-sm font-medium transition-colors"
