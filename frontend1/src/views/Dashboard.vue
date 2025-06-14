@@ -71,7 +71,7 @@ const addToCart = async (productoId) => {
             Inicio
           </router-link>
           <router-link 
-            to="/productos" 
+            to="/" 
             class="hidden md:block text-gray-700 hover:text-pink-500 text-sm font-medium transition-colors"
             active-class="text-pink-500"
           >
